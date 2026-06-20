@@ -13,7 +13,7 @@
             "externalConsole": true,
             "MIMode": "gdb",
             "miDebuggerPath": "C:\\Program Files (x86)\\Dev-Cpp\\MinGW64\\bin\\gdb.exe",
-            "preLaunchTask": "C/C++: g++.exe build active file"
+            "preLaunchTask": "Build Project_GR1.cpp"
         }
     ]
 }
