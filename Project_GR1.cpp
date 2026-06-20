@@ -387,7 +387,18 @@ void chooseCarType(char out[]) {
     else if (choice == 2) copyText(out, "Hatchback", MAX_TEXT);
     else if (choice == 3) copyText(out, "SUV", MAX_TEXT);
     else if (choice == 4) copyText(out, "Compact", MAX_TEXT);
-    else inputLine("Type: ", out, MAX_TEXT);
+    else {
+        while (true) {
+            inputLine("Type (letters and spaces only, 3-20 characters): ", out, MAX_TEXT);
+            int len = strlen(out);
+            bool valid = len >= 3 && len <= 20;
+            for (int i = 0; out[i] != '\0'; i++) {
+                if (!isalpha(out[i]) && out[i] != ' ') valid = false;
+            }
+            if (valid) return;
+            cout << "Invalid type. Use letters and spaces only, example Luxury Van." << endl;
+        }
+    }
 }
 class FileEntity {
 protected:
@@ -1969,6 +1980,99 @@ public:
         }
     }
 };
+class HelpGuide {
+public:
+    HelpGuide() { }
+    ~HelpGuide() { }
+    void showLine(const char text[]) {
+        cout << " - " << text << endl;
+    }
+    void showStaffGuide() {
+        printMenuTitle("Staff Help Guide");
+        showLine("Use Add car record to register a new vehicle.");
+        showLine("Use Edit car record to update brand, model, plate, type, rate, seats, or status.");
+        showLine("Use Display all cars before deleting or editing records.");
+        showLine("Use Search car for binary search by car ID.");
+        showLine("Use Sort cars to arrange records by rate or brand.");
+        showLine("Use Delete car only after confirming the selected details.");
+        showLine("Use Maintenance when a car is not available for rental.");
+        showLine("Use Complete maintenance to return a car to Available.");
+        showLine("Use Fleet analytics to review revenue, rental count, and car usage.");
+        showLine("Use Backup and export before final submission or major testing.");
+    }
+    void showCustomerGuide() {
+        printMenuTitle("Customer Help Guide");
+        showLine("Register from the main menu before customer login.");
+        showLine("Use Display available cars to see cars that can be rented.");
+        showLine("Use Search car when you already know the car ID.");
+        showLine("Use Sort cars to compare price or brand.");
+        showLine("Use Make rental booking to select car, dates, days, promotion, and payment.");
+        showLine("Use Edit booking to change dates and days; total amount is recalculated.");
+        showLine("Use Cancel booking to cancel the rental and return the car to Available.");
+        showLine("Use View receipt after booking payment is created.");
+        showLine("Use Submit feedback to rate completed or active rental experience.");
+        showLine("Use Report car incident to record damage or issues during rental.");
+    }
+    void showValidationGuide() {
+        printMenuTitle("Input Validation Guide");
+        showLine("Menu choices accept numbers only and reject invalid options.");
+        showLine("Password input is masked with stars.");
+        showLine("Phone number must start with 01 and contain 10 or 11 digits.");
+        showLine("Plate number must contain 1-3 English letters followed by 1-4 digits.");
+        showLine("Date must follow YYYY-MM-DD format.");
+        showLine("End date must not be earlier than start date.");
+        showLine("Rental days, seats, cost, and amount must be positive where required.");
+        showLine("Promotion discount cannot exceed the allowed maximum.");
+        showLine("Duplicate username and duplicate car ID are rejected.");
+        showLine("Restricted customer actions check ownership of rental records.");
+    }
+    void showDataFileGuide() {
+        printMenuTitle("Text File Guide");
+        showLine("users.txt stores staff and customer login accounts.");
+        showLine("cars.txt stores the linked-list car source records.");
+        showLine("rentals.txt stores rental booking records.");
+        showLine("payments.txt stores payment records created after booking.");
+        showLine("receipts.txt stores receipt records generated from payment.");
+        showLine("maintenance.txt stores vehicle maintenance history.");
+        showLine("feedback.txt stores customer feedback and ratings.");
+        showLine("incidents.txt stores customer incident reports.");
+        showLine("promotions.txt stores discount campaign settings.");
+        showLine("activity_log.txt stores audit history for key actions.");
+        showLine("reports.txt and system_backup.txt store generated reports and backups.");
+    }
+    void showAlgorithmGuide() {
+        printMenuTitle("Algorithm Guide");
+        showLine("Cars are stored in a manually implemented linked list.");
+        showLine("Car sorting is manually implemented without built-in sorting functions.");
+        showLine("Car ID lookup uses manually implemented binary search.");
+        showLine("Car records are copied into arrays before sort/search operations.");
+        showLine("No STL containers such as vector, list, stack, or queue are used.");
+        showLine("File load and save operations keep modules consistent across sessions.");
+        showLine("Cancelling booking updates both rental and car records.");
+        showLine("Editing booking recalculates amount and updates payment/receipt records.");
+        showLine("Maintenance changes car status to Maintenance, then back to Available.");
+        showLine("Analytics uses manual loops over arrays and linked list records.");
+    }
+    void showHelpMenu() {
+        int choice = 0;
+        while (choice != 6) {
+            printMenuTitle("Help And User Guide");
+            printMenuOption(1, "Staff guide");
+            printMenuOption(2, "Customer guide");
+            printMenuOption(3, "Input validation guide");
+            printMenuOption(4, "Text file guide");
+            printMenuOption(5, "Algorithm guide");
+            printMenuOption(6, "Back");
+            printBoxLine(48);
+            choice = readChoice(1, 6);
+            if (choice == 1) showStaffGuide();
+            else if (choice == 2) showCustomerGuide();
+            else if (choice == 3) showValidationGuide();
+            else if (choice == 4) showDataFileGuide();
+            else if (choice == 5) showAlgorithmGuide();
+        }
+    }
+};
 class ReportModule : public FileEntity {
 public:
     ReportModule() : FileEntity(REPORTS_FILE) { }
@@ -2041,7 +2145,8 @@ public:
         printMenuOption(29, "Search customer account");
         printMenuOption(30, "Filter customers by phone");
         printMenuOption(31, "Display user statistics");
-        printMenuOption(32, "Logout");
+        printMenuOption(32, "Help and user guide");
+        printMenuOption(33, "Logout");
         printBoxLine(48);
     }
     void registerStaffAccount(UserManager &users) {
@@ -2204,7 +2309,8 @@ public:
         printMenuOption(12, "Display promotions");
         printMenuOption(13, "Report car incident");
         printMenuOption(14, "View my incidents");
-        printMenuOption(15, "Logout");
+        printMenuOption(15, "Help and user guide");
+        printMenuOption(16, "Logout");
         printBoxLine(48);
     }
     void registerAccount(UserManager &users) {
@@ -2371,11 +2477,11 @@ public:
         fin.close();
     }
 };
-void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, RentalManager &rentals, PaymentManager &payments, ReceiptManager &receipts, FeedbackManager &feedbacks, MaintenanceManager &maintenance, PromotionManager &promotions, IncidentManager &incidents, ActivityLogManager &activityLog, FleetAnalytics &analytics, BackupManager &backup, ReportModule &reports) {
+void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, RentalManager &rentals, PaymentManager &payments, ReceiptManager &receipts, FeedbackManager &feedbacks, MaintenanceManager &maintenance, PromotionManager &promotions, IncidentManager &incidents, ActivityLogManager &activityLog, FleetAnalytics &analytics, BackupManager &backup, HelpGuide &helpGuide, ReportModule &reports) {
     int choice = 0;
-    while (choice != 32) {
+    while (choice != 33) {
         staff.showMenu();
-        choice = readChoice(1, 32);
+        choice = readChoice(1, 33);
         if (choice == 1) staff.addCarRecord(cars);
         else if (choice == 2) staff.editCarRecord(cars);
         else if (choice == 3) printCarFriend(cars);
@@ -2407,14 +2513,15 @@ void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, Renta
         else if (choice == 29) users.searchCustomerByUsername();
         else if (choice == 30) users.filterCustomersByPhonePrefix();
         else if (choice == 31) users.displayUserStatistics();
+        else if (choice == 32) helpGuide.showHelpMenu();
     }
     staff.logout();
 }
-void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &cars, RentalManager &rentals, PaymentManager &payments, ReceiptManager &receipts, FeedbackManager &feedbacks, PromotionManager &promotions, IncidentManager &incidents, ActivityLogManager &activityLog) {
+void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &cars, RentalManager &rentals, PaymentManager &payments, ReceiptManager &receipts, FeedbackManager &feedbacks, PromotionManager &promotions, IncidentManager &incidents, ActivityLogManager &activityLog, HelpGuide &helpGuide) {
     int choice = 0;
-    while (choice != 15) {
+    while (choice != 16) {
         customer.showMenu();
-        choice = readChoice(1, 15);
+        choice = readChoice(1, 16);
         if (choice == 1) customer.displayAvailableCars(cars);
         else if (choice == 2) searchCarById(cars);
         else if (choice == 3) sortAndDisplayCars(cars);
@@ -2429,6 +2536,7 @@ void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &ca
         else if (choice == 12) promotions.displayActive();
         else if (choice == 13) { incidents.addIncident(customer.getCurrentUser(), rentals); activityLog.addActivity(customer.getCurrentUser(), "Report incident", "INC", "Success"); }
         else if (choice == 14) incidents.displayCustomerIncidents(customer.getCurrentUser());
+        else if (choice == 15) helpGuide.showHelpMenu();
     }
     customer.logout();
 }
@@ -2452,6 +2560,7 @@ int main() {
     ActivityLogManager activityLog;
     FleetAnalytics analytics;
     BackupManager backup;
+    HelpGuide helpGuide;
     ReportModule reports;
     users.load();
     cars.load();
@@ -2475,11 +2584,11 @@ int main() {
         option = readChoice(1, 4);
         if (option == 1) {
             StaffModule staff;
-            if (staff.login(users.allUsers(), users.size())) runStaff(staff, users, cars, rentals, payments, receipts, feedbacks, maintenance, promotions, incidents, activityLog, analytics, backup, reports);
+            if (staff.login(users.allUsers(), users.size())) runStaff(staff, users, cars, rentals, payments, receipts, feedbacks, maintenance, promotions, incidents, activityLog, analytics, backup, helpGuide, reports);
             else cout << "Invalid staff login." << endl;
         } else if (option == 2) {
             CustomerModule customer;
-            if (customer.login(users.allUsers(), users.size())) runCustomer(customer, users, cars, rentals, payments, receipts, feedbacks, promotions, incidents, activityLog);
+            if (customer.login(users.allUsers(), users.size())) runCustomer(customer, users, cars, rentals, payments, receipts, feedbacks, promotions, incidents, activityLog, helpGuide);
             else cout << "Invalid customer login." << endl;
         } else if (option == 3) {
             CustomerModule customer;
