@@ -328,6 +328,55 @@ int dateKey(const char dateText[]) {
     if (!parseDate(dateText, year, month, day)) return -1;
     return year * 10000 + month * 100 + day;
 }
+int dateSerial(int year, int month, int day) {
+    int serial = 0;
+    for (int y = 2020; y < year; y++) {
+        serial += isLeapYear(y) ? 366 : 365;
+    }
+    for (int m = 1; m < month; m++) {
+        serial += daysInMonth(year, m);
+    }
+    serial += day;
+    return serial;
+}
+int dateSerialFromText(const char dateText[]) {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    if (!parseDate(dateText, year, month, day)) return -1;
+    return dateSerial(year, month, day);
+}
+void serialToDate(int serial, char out[]) {
+    int year = 2020;
+    while (serial > (isLeapYear(year) ? 366 : 365)) {
+        serial -= isLeapYear(year) ? 366 : 365;
+        year++;
+    }
+    int month = 1;
+    while (serial > daysInMonth(year, month)) {
+        serial -= daysInMonth(year, month);
+        month++;
+    }
+    int day = serial;
+    sprintf(out, "%04d-%02d-%02d", year, month, day);
+}
+void getTodayDate(char out[]) {
+    time_t now = time(0);
+    tm *localTime = localtime(&now);
+    int year = localTime->tm_year + 1900;
+    int month = localTime->tm_mon + 1;
+    int day = localTime->tm_mday;
+    sprintf(out, "%04d-%02d-%02d", year, month, day);
+}
+void getTomorrowDate(char out[]) {
+    char today[MAX_TEXT];
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    getTodayDate(today);
+    parseDate(today, year, month, day);
+    serialToDate(dateSerial(year, month, day) + 1, out);
+}
 bool isDateRangeValid(const char startDate[], const char endDate[]) {
     int startKey = dateKey(startDate);
     int endKey = dateKey(endDate);
@@ -350,6 +399,40 @@ void inputDateRange(char startDate[], char endDate[]) {
         inputDate("End date YYYY-MM-DD: ", endDate);
         if (isDateRangeValid(startDate, endDate)) return;
         cout << "Invalid date range. End date must not be earlier than start date." << endl;
+    }
+}
+int calculateRentalDays(const char startDate[], const char endDate[]) {
+    int startSerial = dateSerialFromText(startDate);
+    int endSerial = dateSerialFromText(endDate);
+    if (startSerial < 0 || endSerial < 0 || endSerial < startSerial) return 0;
+    return endSerial - startSerial + 1;
+}
+bool inputBookingDateRange(char startDate[], char endDate[], int &days) {
+    char today[MAX_TEXT];
+    char tomorrow[MAX_TEXT];
+    getTodayDate(today);
+    getTomorrowDate(tomorrow);
+    while (true) {
+        cout << "Today date is " << today << "." << endl;
+        cout << "Rental start date must be tomorrow: " << tomorrow << endl;
+        inputDate("Start date YYYY-MM-DD: ", startDate);
+        if (!sameText(startDate, tomorrow)) {
+            cout << "Invalid start date. Start date must be exactly tomorrow (" << tomorrow << ")." << endl;
+            continue;
+        }
+        inputDate("End date YYYY-MM-DD: ", endDate);
+        if (!isDateRangeValid(startDate, endDate)) {
+            cout << "Invalid end date. End date cannot be before start date." << endl;
+            continue;
+        }
+        days = calculateRentalDays(startDate, endDate);
+        cout << "Total rental days: " << days << endl;
+        char confirm[MAX_TEXT];
+        inputLine("Confirm these rental dates? Type YES to confirm: ", confirm, MAX_TEXT);
+        toUpperText(confirm);
+        if (sameText(confirm, "YES")) return true;
+        cout << "Date selection not confirmed." << endl;
+        return false;
     }
 }
 void inputPositiveDouble(const char prompt[], double &value) {
@@ -2349,16 +2432,13 @@ public:
             if (car == NULL) throw "Car not found.";
             if (!sameText(car->status, "Available")) throw "Car is not available.";
             RentalRecord rental;
-            char daysText[MAX_TEXT];
             int number = rentals.size() + 1;
             sprintf(rental.rentalId, "REN%03d", number);
             copyText(rental.username, currentUser, MAX_TEXT);
             copyText(rental.carId, id, MAX_TEXT);
-            inputLine("Start date YYYY-MM-DD: ", rental.startDate, MAX_TEXT);
-            inputLine("End date YYYY-MM-DD: ", rental.endDate, MAX_TEXT);
-            inputLine("Rental days: ", daysText, MAX_TEXT);
-            rental.days = textToInt(daysText);
-            if (rental.days <= 0) throw "Rental days must be positive.";
+            if (!inputBookingDateRange(rental.startDate, rental.endDate, rental.days)) {
+                throw "Booking cancelled because rental dates were not confirmed.";
+            }
             rental.totalAmount = rental.days * car->dailyRate;
             promotions.displayActive();
             char promoCode[MAX_TEXT];
@@ -2408,16 +2488,13 @@ public:
     void editBooking(RentalManager &rentals, CarLinkedList &cars, PaymentManager &payments, ReceiptManager &receipts, ActivityLogManager &activityLog) {
         try {
             char id[MAX_TEXT];
-            char daysText[MAX_TEXT];
             inputLine("Rental ID to edit: ", id, MAX_TEXT);
             RentalRecord *rental = rentals.findById(id);
             if (rental == NULL) throw "Rental not found.";
             if (!sameText(rental->username, currentUser)) throw "You can edit only your own booking.";
-            inputLine("New start date: ", rental->startDate, MAX_TEXT);
-            inputLine("New end date: ", rental->endDate, MAX_TEXT);
-            inputLine("New days: ", daysText, MAX_TEXT);
-            rental->days = textToInt(daysText);
-            if (rental->days <= 0) throw "Rental days must be positive.";
+            if (!inputBookingDateRange(rental->startDate, rental->endDate, rental->days)) {
+                throw "Booking update cancelled because rental dates were not confirmed.";
+            }
             CarRecord *car = cars.findById(rental->carId);
             if (car == NULL) throw "Related car record not found.";
             rental->totalAmount = rental->days * car->dailyRate;
@@ -2471,6 +2548,8 @@ public:
         fout << "Rental count: " << count << endl;
         fout << "Rental amount: RM " << amount << endl;
         fout.close();
+        cout << "Customer summary report saved to " << REPORTS_FILE << "." << endl;
+        cout << "Location: same folder as Project_GR1.cpp and the executable file." << endl;
         ifstream fin(REPORTS_FILE);
         char line[200];
         while (fin.getline(line, 200)) cout << line << endl;
