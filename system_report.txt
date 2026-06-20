@@ -1,0 +1,5 @@
+Car Rental Management System Summary Report
+Total cars: 60
+Available cars: 59
+Total rentals: 15
+Total revenue: RM 6267

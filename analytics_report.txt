@@ -1,0 +1,10 @@
+Fleet Analytics Report
+Cars: 60
+Available: 59
+Rented: 0
+Maintenance: 1
+Rentals: 15
+Revenue: 6267
+Maintenance cost: 760
+Average feedback rating: 4.66667
+Incident charges: 0

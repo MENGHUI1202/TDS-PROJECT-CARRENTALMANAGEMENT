@@ -1,0 +1,4 @@
+Customer Summary Report
+Customer: customer
+Rental count: 15
+Rental amount: RM 6267

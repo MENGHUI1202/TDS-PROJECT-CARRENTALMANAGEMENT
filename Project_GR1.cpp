@@ -17,6 +17,9 @@ const char CARS_FILE[] = "cars.txt";
 const char RENTALS_FILE[] = "rentals.txt";
 const char PAYMENTS_FILE[] = "payments.txt";
 const char REPORTS_FILE[] = "reports.txt";
+const char SYSTEM_REPORT_FILE[] = "system_report.txt";
+const char CUSTOMER_REPORT_FILE[] = "customer_summary_report.txt";
+const char ANALYTICS_REPORT_FILE[] = "analytics_report.txt";
 const char MAINTENANCE_FILE[] = "maintenance.txt";
 const char RECEIPTS_FILE[] = "receipts.txt";
 const char FEEDBACK_FILE[] = "feedback.txt";
@@ -438,6 +441,27 @@ bool inputBookingDateRange(char startDate[], char endDate[], int &days) {
         if (sameText(confirm, "YES")) return true;
         cout << "Date selection not confirmed." << endl;
         return false;
+    }
+}
+void inputMaintenanceStartDate(char startDate[]) {
+    char today[MAX_TEXT];
+    getTodayDate(today);
+    int todaySerial = dateSerialFromText(today);
+    while (true) {
+        cout << "Today date is " << today << "." << endl;
+        inputDate("Maintenance start date YYYY-MM-DD: ", startDate);
+        int startSerial = dateSerialFromText(startDate);
+        if (startSerial >= todaySerial) return;
+        cout << "Invalid maintenance start date. It cannot be before today." << endl;
+    }
+}
+void inputMaintenanceCompletionDate(const char startDate[], char endDate[]) {
+    int startSerial = dateSerialFromText(startDate);
+    while (true) {
+        inputDate("Completion date YYYY-MM-DD: ", endDate);
+        int endSerial = dateSerialFromText(endDate);
+        if (endSerial > startSerial) return;
+        cout << "Invalid completion date. It must be after the maintenance start date." << endl;
     }
 }
 void inputPositiveDouble(const char prompt[], double &value) {
@@ -1169,6 +1193,13 @@ public:
         copyText(feedback.username, username, MAX_TEXT);
         copyText(feedback.rentalId, rentalId, MAX_TEXT);
         inputLine("Feedback comment: ", feedback.comment, MAX_TEXT);
+        printMenuTitle("Feedback Rating");
+        printMenuOption(1, "Very poor");
+        printMenuOption(2, "Poor");
+        printMenuOption(3, "Average");
+        printMenuOption(4, "Good");
+        printMenuOption(5, "Excellent");
+        printBoxLine(48);
         feedback.rating = readChoice(1, 5);
         copyText(feedback.status, "Submitted", MAX_TEXT);
         addFeedback(feedback);
@@ -1300,7 +1331,7 @@ public:
         generateMaintenanceId(record.maintenanceId);
         copyText(record.carId, carId, MAX_TEXT);
         inputLine("Issue description: ", record.issue, MAX_TEXT);
-        inputDate("Start date YYYY-MM-DD: ", record.startDate);
+        inputMaintenanceStartDate(record.startDate);
         copyText(record.endDate, "Pending", MAX_TEXT);
         inputPositiveDouble("Estimated cost: RM ", record.cost);
         copyText(record.status, "Active", MAX_TEXT);
@@ -1322,7 +1353,7 @@ public:
             cout << "Maintenance is not active." << endl;
             return;
         }
-        inputDate("Completion date YYYY-MM-DD: ", record->endDate);
+        inputMaintenanceCompletionDate(record->startDate, record->endDate);
         inputPositiveDouble("Final cost: RM ", record->cost);
         copyText(record->status, "Completed", MAX_TEXT);
         CarRecord *car = cars.findById(record->carId);
@@ -1871,7 +1902,7 @@ public:
         cout << "Combined cost impact   : RM " << maintenance.totalMaintenanceCost() + incidents.totalCharges() << endl;
     }
     void saveAnalyticsReport(CarLinkedList &cars, RentalManager &rentals, MaintenanceManager &maintenance, FeedbackManager &feedbacks, IncidentManager &incidents) {
-        ofstream fout(REPORTS_FILE, ios::app);
+        ofstream fout(ANALYTICS_REPORT_FILE);
         fout << "Fleet Analytics Report" << endl;
         fout << "Cars: " << cars.size() << endl;
         fout << "Available: " << countCarsByStatus(cars, "Available") << endl;
@@ -1883,7 +1914,8 @@ public:
         fout << "Average feedback rating: " << feedbacks.averageRating() << endl;
         fout << "Incident charges: " << incidents.totalCharges() << endl;
         fout.close();
-        cout << "Analytics report saved to reports.txt." << endl;
+        cout << "Analytics report saved to " << ANALYTICS_REPORT_FILE << "." << endl;
+        cout << "Location: same folder as Project_GR1.cpp and the executable file." << endl;
     }
     void showAnalyticsMenu(CarLinkedList &cars, RentalManager &rentals, MaintenanceManager &maintenance, FeedbackManager &feedbacks, IncidentManager &incidents) {
         int choice = 0;
@@ -1912,6 +1944,7 @@ public:
             else if (choice == 8) showFeedbackRatingBreakdown(feedbacks);
             else if (choice == 9) showCostSummary(maintenance, incidents);
             else if (choice == 10) saveAnalyticsReport(cars, rentals, maintenance, feedbacks, incidents);
+            if (choice != 11) waitForEnter();
         }
     }
 };
@@ -1960,6 +1993,9 @@ public:
         appendFile(fout, "Incidents", INCIDENTS_FILE);
         appendFile(fout, "Activity Log", ACTIVITY_FILE);
         appendFile(fout, "Reports", REPORTS_FILE);
+        appendFile(fout, "System Report", SYSTEM_REPORT_FILE);
+        appendFile(fout, "Customer Summary Report", CUSTOMER_REPORT_FILE);
+        appendFile(fout, "Analytics Report", ANALYTICS_REPORT_FILE);
         fout.close();
         cout << "Full backup exported to system_backup.txt." << endl;
     }
@@ -1987,6 +2023,9 @@ public:
         cout << left << setw(18) << PROMOTIONS_FILE << setw(10) << countFileRecords(PROMOTIONS_FILE) << endl;
         cout << left << setw(18) << INCIDENTS_FILE << setw(10) << countFileRecords(INCIDENTS_FILE) << endl;
         cout << left << setw(18) << ACTIVITY_FILE << setw(10) << countFileRecords(ACTIVITY_FILE) << endl;
+        cout << left << setw(18) << SYSTEM_REPORT_FILE << setw(10) << countFileRecords(SYSTEM_REPORT_FILE) << endl;
+        cout << left << setw(18) << CUSTOMER_REPORT_FILE << setw(10) << countFileRecords(CUSTOMER_REPORT_FILE) << endl;
+        cout << left << setw(18) << ANALYTICS_REPORT_FILE << setw(10) << countFileRecords(ANALYTICS_REPORT_FILE) << endl;
     }
     bool fileExists(const char fileName[]) {
         ifstream fin(fileName);
@@ -2012,6 +2051,9 @@ public:
         printFileCheck(ACTIVITY_FILE);
         printFileCheck(PROMOTIONS_FILE);
         printFileCheck(INCIDENTS_FILE);
+        printFileCheck(SYSTEM_REPORT_FILE);
+        printFileCheck(CUSTOMER_REPORT_FILE);
+        printFileCheck(ANALYTICS_REPORT_FILE);
         cout << "Keep these files in the same folder as the executable." << endl;
     }
     void displaySubmissionChecklist() {
@@ -2022,7 +2064,9 @@ public:
         cout << "[OK] users.txt stores login accounts." << endl;
         cout << "[OK] rentals.txt stores booking records." << endl;
         cout << "[OK] payments.txt stores payment records." << endl;
-        cout << "[OK] reports.txt stores generated reports." << endl;
+        cout << "[OK] system_report.txt stores admin system report." << endl;
+        cout << "[OK] customer_summary_report.txt stores customer report." << endl;
+        cout << "[OK] analytics_report.txt stores fleet analytics report." << endl;
         cout << "[OK] maintenance.txt stores maintenance records." << endl;
         cout << "[OK] receipts.txt stores receipt records." << endl;
         cout << "[OK] feedback.txt stores customer feedback." << endl;
@@ -2065,6 +2109,7 @@ public:
             else if (choice == 3) displayBackupStatus();
             else if (choice == 4) verifyRequiredFiles();
             else if (choice == 5) displaySubmissionChecklist();
+            if (choice != 6) waitForEnter();
         }
     }
 };
@@ -2126,7 +2171,10 @@ public:
         showLine("incidents.txt stores customer incident reports.");
         showLine("promotions.txt stores discount campaign settings.");
         showLine("activity_log.txt stores audit history for key actions.");
-        showLine("reports.txt and system_backup.txt store generated reports and backups.");
+        showLine("system_report.txt stores admin system report.");
+        showLine("customer_summary_report.txt stores customer summary report.");
+        showLine("analytics_report.txt stores fleet analytics report.");
+        showLine("system_backup.txt stores full exported backup.");
     }
     void showAlgorithmGuide() {
         printMenuTitle("Algorithm Guide");
@@ -2158,6 +2206,7 @@ public:
             else if (choice == 3) showValidationGuide();
             else if (choice == 4) showDataFileGuide();
             else if (choice == 5) showAlgorithmGuide();
+            if (choice != 6) waitForEnter();
         }
     }
 };
@@ -2173,13 +2222,19 @@ public:
     }
     void save() { }
     void saveSummary(CarLinkedList &cars, RentalManager &rentals) {
-        ofstream fout(sourceFile);
+        ofstream fout(SYSTEM_REPORT_FILE);
         fout << "Car Rental Management System Summary Report" << endl;
         fout << "Total cars: " << cars.size() << endl;
         fout << "Available cars: " << countAvailableFriend(cars) << endl;
         fout << "Total rentals: " << rentals.size() << endl;
         fout << "Total revenue: RM " << totalRevenueFriend(rentals) << endl;
         fout.close();
+        cout << "System report saved to " << SYSTEM_REPORT_FILE << "." << endl;
+        cout << "Location: same folder as Project_GR1.cpp and the executable file." << endl;
+        ifstream fin(SYSTEM_REPORT_FILE);
+        char line[200];
+        while (fin.getline(line, 200)) cout << line << endl;
+        fin.close();
     }
 };
 class StaffModule : public PersonModule {
@@ -2539,7 +2594,7 @@ public:
         }
     }
     void saveAndRetrieveMySummary(RentalManager &rentals) {
-        ofstream fout(REPORTS_FILE, ios::app);
+        ofstream fout(CUSTOMER_REPORT_FILE);
         fout << "Customer Summary for " << currentUser << endl;
         int count = 0;
         double amount = 0;
@@ -2553,9 +2608,9 @@ public:
         fout << "Rental count: " << count << endl;
         fout << "Rental amount: RM " << amount << endl;
         fout.close();
-        cout << "Customer summary report saved to " << REPORTS_FILE << "." << endl;
+        cout << "Customer summary report saved to " << CUSTOMER_REPORT_FILE << "." << endl;
         cout << "Location: same folder as Project_GR1.cpp and the executable file." << endl;
-        ifstream fin(REPORTS_FILE);
+        ifstream fin(CUSTOMER_REPORT_FILE);
         char line[200];
         while (fin.getline(line, 200)) cout << line << endl;
         fin.close();
@@ -2573,7 +2628,7 @@ void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, Renta
         else if (choice == 5) staff.sortCarRecords(cars);
         else if (choice == 6) staff.deleteCarRecord(cars);
         else if (choice == 7) printRentalFriend(rentals);
-        else if (choice == 8) { reports.saveSummary(cars, rentals); reports.load(); }
+        else if (choice == 8) reports.saveSummary(cars, rentals);
         else if (choice == 9) staff.registerStaffAccount(users);
         else if (choice == 10) users.displayAllUsers();
         else if (choice == 11) users.displayStaffUsers();
