@@ -1,0 +1,3 @@
+WELCOME10,New customer welcome discount,10,Active
+WEEKDAY15,Weekday rental discount,15,Active
+EXPIRED5,Old campaign discount,5,Inactive

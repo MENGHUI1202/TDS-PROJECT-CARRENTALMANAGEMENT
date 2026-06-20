@@ -1,0 +1,2 @@
+INC001,REN001,customer,CAR001,Scratch on rear bumper,0,Reported
+INC002,REN002,customer,CAR002,Lost umbrella inside car,0,Resolved
