@@ -1,0 +1,8 @@
+CarRentalSystem Summary Report
+Total cars: 60
+Available cars: 52
+Total rentals: 15
+Total revenue: RM 6702
+Customer Summary for menghui
+Rental count: 1
+Rental amount: RM 233
