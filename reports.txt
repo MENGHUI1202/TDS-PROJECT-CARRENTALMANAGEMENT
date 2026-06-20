@@ -1,4 +1,4 @@
-CarRentalSystem Summary Report
+Car Rental Management System Summary Report
 Total cars: 60
 Available cars: 52
 Total rentals: 15

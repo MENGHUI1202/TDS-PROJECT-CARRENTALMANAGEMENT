@@ -600,7 +600,7 @@ public:
     void save() { }
     void saveSummary(CarLinkedList &cars, RentalManager &rentals) {
         ofstream fout(sourceFile);
-        fout << "CarRentalSystem Summary Report" << endl;
+        fout << "Car Rental Management System Summary Report" << endl;
         fout << "Total cars: " << cars.size() << endl;
         fout << "Available cars: " << countAvailableFriend(cars) << endl;
         fout << "Total rentals: " << rentals.size() << endl;
@@ -3888,7 +3888,7 @@ int calculatePolicyBundle(int seed) {
 }
 void showWelcome() {
     printBoxLine(54);
-    printCenteredLine("CarRentalSystem", 54);
+    printCenteredLine("Car Rental Management System", 54);
     printCenteredLine("Data Structure and Algorithms Project", 54);
     printBoxLine(54);
 }
@@ -3926,6 +3926,6 @@ int main() {
     cars.save();
     rentals.save();
     users.save();
-    cout << "Thank you for using CarRentalSystem." << endl;
+    cout << "Thank you for using Car Rental Management System." << endl;
     return calculatePolicyBundle(7) >= 0 ? 0 : 1;
 }

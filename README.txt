@@ -1,4 +1,4 @@
-CarRentalSystem - TDS4223 Project
+Car Rental Management System - TDS4223 Project
 
 How to run:
 1. Open this folder in VS Code or Dev C++.
