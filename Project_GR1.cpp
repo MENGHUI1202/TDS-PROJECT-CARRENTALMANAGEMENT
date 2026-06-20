@@ -155,6 +155,11 @@ void pauseScreen() {
     cin.ignore(10000, '\n');
     cin.get();
 }
+void waitForEnter() {
+    char temp[MAX_TEXT];
+    cout << "\nPress ENTER to return to the menu...";
+    cin.getline(temp, MAX_TEXT);
+}
 void inputLine(const char prompt[], char out[], int limit) {
     cout << prompt;
     cin.getline(out, limit);
@@ -2593,6 +2598,7 @@ void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, Renta
         else if (choice == 30) users.filterCustomersByPhonePrefix();
         else if (choice == 31) users.displayUserStatistics();
         else if (choice == 32) helpGuide.showHelpMenu();
+        if (choice != 33) waitForEnter();
     }
     staff.logout();
 }
@@ -2616,6 +2622,7 @@ void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &ca
         else if (choice == 13) { incidents.addIncident(customer.getCurrentUser(), rentals); activityLog.addActivity(customer.getCurrentUser(), "Report incident", "INC", "Success"); }
         else if (choice == 14) incidents.displayCustomerIncidents(customer.getCurrentUser());
         else if (choice == 15) helpGuide.showHelpMenu();
+        if (choice != 16) waitForEnter();
     }
     customer.logout();
 }
