@@ -5,7 +5,7 @@
             "name": "Debug Project_GR1",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\Project_GR1_run.exe",
+            "program": "${workspaceFolder}\\Project_GR1_demo.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

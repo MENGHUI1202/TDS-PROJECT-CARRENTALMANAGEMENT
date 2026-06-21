@@ -10,7 +10,7 @@
                 "-std=c++11",
                 "${workspaceFolder}\\Project_GR1.cpp",
                 "-o",
-                "${workspaceFolder}\\Project_GR1_run.exe"
+                "${workspaceFolder}\\Project_GR1_demo.exe"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
