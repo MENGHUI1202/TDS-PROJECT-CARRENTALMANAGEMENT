@@ -1128,7 +1128,7 @@ public:
             save();
         }
     }
-    void displayReceipt(ReceiptRecord receipt) {
+    void displayReceipt(ReceiptRecord receipt, const char rentalStatus[]) {
         printBoxLine(54);
         printCenteredLine("Rental Receipt", 54);
         printBoxLine(54);
@@ -1139,6 +1139,7 @@ public:
         cout << "Payment ID : " << receipt.paymentId << endl;
         cout << "Issue Date : " << receipt.issueDate << endl;
         cout << "Amount     : RM " << receipt.amount << endl;
+        cout << "Status     : " << rentalStatus << endl;
         printBoxLine(54);
     }
     void displayAllReceipts() {
@@ -1151,12 +1152,16 @@ public:
             cout << setw(10) << receipts[i].amount << endl;
         }
     }
-    void displayReceiptByRental() {
+    void displayReceiptByRental(RentalManager &rentals) {
         char rentalId[MAX_TEXT];
         inputLine("Enter rental ID: ", rentalId, MAX_TEXT);
         ReceiptRecord *receipt = findByRentalId(rentalId);
         if (receipt == NULL) cout << "Receipt not found." << endl;
-        else displayReceipt(*receipt);
+        else {
+            RentalRecord *rental = rentals.findById(rentalId);
+            if (rental == NULL) displayReceipt(*receipt, "Unknown");
+            else displayReceipt(*receipt, rental->status);
+        }
     }
     void load() {
         total = 0;
@@ -2817,7 +2822,7 @@ void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &ca
         else if (choice == 6) customer.cancelBooking(rentals, cars, payments, activityLog);
         else if (choice == 7) customer.viewMyRentals(rentals);
         else if (choice == 8) customer.saveAndRetrieveMySummary(rentals);
-        else if (choice == 9) receipts.displayReceiptByRental();
+        else if (choice == 9) receipts.displayReceiptByRental(rentals);
         else if (choice == 10) { feedbacks.submitFeedback(customer.getCurrentUser(), rentals); activityLog.addActivity(customer.getCurrentUser(), "Submit feedback", "FDB", "Success"); }
         else if (choice == 11) feedbacks.displayCustomerFeedback(customer.getCurrentUser());
         else if (choice == 12) promotions.displayActive();
