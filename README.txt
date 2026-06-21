@@ -11,6 +11,6 @@ Staff/Admin: admin / admin123
 Staff/Admin: staff / staff123
 Customer: customer / cust123
 
-The system uses cars.txt, users.txt, rentals.txt, payments.txt, reports.txt,
-maintenance.txt, receipts.txt, feedback.txt, activity_log.txt, promotions.txt,
-and incidents.txt.
+The system uses cars.txt, staff_users.txt, customer_users.txt, rentals.txt,
+payments.txt, reports.txt, maintenance.txt, receipts.txt, feedback.txt,
+activity_log.txt, promotions.txt, and incidents.txt.

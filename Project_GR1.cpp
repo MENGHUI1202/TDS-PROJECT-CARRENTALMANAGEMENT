@@ -12,7 +12,8 @@ const int MAX_TEXT = 80;
 const int MAX_CARS = 250;
 const int MAX_RENTALS = 250;
 const int MAX_USERS = 120;
-const char USERS_FILE[] = "users.txt";
+const char STAFF_USERS_FILE[] = "staff_users.txt";
+const char CUSTOMER_USERS_FILE[] = "customer_users.txt";
 const char CARS_FILE[] = "cars.txt";
 const char RENTALS_FILE[] = "rentals.txt";
 const char PAYMENTS_FILE[] = "payments.txt";
@@ -391,6 +392,19 @@ bool isDateRangeValid(const char startDate[], const char endDate[]) {
     if (startKey < 0 || endKey < 0) return false;
     return endKey >= startKey;
 }
+bool isCancelInput(const char text[]) {
+    return sameText(text, "0") || sameText(text, "CANCEL");
+}
+bool inputYesNoConfirmation(const char prompt[]) {
+    char confirm[MAX_TEXT];
+    while (true) {
+        inputLine(prompt, confirm, MAX_TEXT);
+        toUpperText(confirm);
+        if (sameText(confirm, "YES")) return true;
+        if (sameText(confirm, "NO")) return false;
+        cout << "Invalid option. Please type YES to confirm or NO to cancel." << endl;
+    }
+}
 void inputDate(const char prompt[], char out[]) {
     while (true) {
         inputLine(prompt, out, MAX_TEXT);
@@ -420,12 +434,14 @@ bool inputBookingDateRange(char startDate[], char endDate[], int &days) {
     char tomorrow[MAX_TEXT];
     getTodayDate(today);
     getTomorrowDate(tomorrow);
+    int tomorrowSerial = dateSerialFromText(tomorrow);
     while (true) {
         cout << "Today date is " << today << "." << endl;
-        cout << "Rental start date must be tomorrow: " << tomorrow << endl;
+        cout << "Rental start date must be tomorrow or later. Earliest start date: " << tomorrow << endl;
         inputDate("Start date YYYY-MM-DD: ", startDate);
-        if (!sameText(startDate, tomorrow)) {
-            cout << "Invalid start date. Start date must be exactly tomorrow (" << tomorrow << ")." << endl;
+        int startSerial = dateSerialFromText(startDate);
+        if (startSerial < tomorrowSerial) {
+            cout << "Invalid start date. Start date must be " << tomorrow << " or later." << endl;
             continue;
         }
         inputDate("End date YYYY-MM-DD: ", endDate);
@@ -435,10 +451,7 @@ bool inputBookingDateRange(char startDate[], char endDate[], int &days) {
         }
         days = calculateRentalDays(startDate, endDate);
         cout << "Total rental days: " << days << endl;
-        char confirm[MAX_TEXT];
-        inputLine("Confirm these rental dates? Type YES to confirm: ", confirm, MAX_TEXT);
-        toUpperText(confirm);
-        if (sameText(confirm, "YES")) return true;
+        if (inputYesNoConfirmation("Confirm these rental dates? Type YES to confirm or NO to cancel: ")) return true;
         cout << "Date selection not confirmed." << endl;
         return false;
     }
@@ -750,7 +763,7 @@ private:
     UserRecord users[MAX_USERS];
     int total;
 public:
-    UserManager() : FileEntity(USERS_FILE) { total = 0; }
+    UserManager() : FileEntity(CUSTOMER_USERS_FILE) { total = 0; }
     ~UserManager() { }
     int size() { return total; }
     UserRecord *allUsers() { return users; }
@@ -829,9 +842,8 @@ public:
             }
         }
     }
-    void load() {
-        total = 0;
-        ifstream fin(sourceFile);
+    void loadUserFile(const char fileName[], const char defaultRole[]) {
+        ifstream fin(fileName);
         char line[400];
         while (fin.getline(line, 400)) {
             trimNewline(line);
@@ -843,17 +855,29 @@ public:
             readField(line, pos, user.role);
             readField(line, pos, user.fullName);
             readField(line, pos, user.phone);
+            if (strlen(user.role) == 0) copyText(user.role, defaultRole, MAX_TEXT);
             addUser(user);
         }
         fin.close();
     }
-    void save() {
-        ofstream fout(sourceFile);
+    void load() {
+        total = 0;
+        loadUserFile(STAFF_USERS_FILE, "Staff");
+        loadUserFile(CUSTOMER_USERS_FILE, "Customer");
+    }
+    void saveRoleFile(const char fileName[], const char role[]) {
+        ofstream fout(fileName);
         for (int i = 0; i < total; i++) {
-            fout << users[i].username << ',' << users[i].password << ',' << users[i].role << ',';
-            fout << users[i].fullName << ',' << users[i].phone << endl;
+            if (sameText(users[i].role, role)) {
+                fout << users[i].username << ',' << users[i].password << ',' << users[i].role << ',';
+                fout << users[i].fullName << ',' << users[i].phone << endl;
+            }
         }
         fout.close();
+    }
+    void save() {
+        saveRoleFile(STAFF_USERS_FILE, "Staff");
+        saveRoleFile(CUSTOMER_USERS_FILE, "Customer");
     }
 };
 void sortCarsByRate(CarRecord cars[], int count) {
@@ -1982,7 +2006,8 @@ public:
         fout << "Car Rental Management System Backup Export" << endl;
         fout << "This file contains readable copies of all system text data." << endl;
         fout << endl;
-        appendFile(fout, "Users", USERS_FILE);
+        appendFile(fout, "Staff Users", STAFF_USERS_FILE);
+        appendFile(fout, "Customer Users", CUSTOMER_USERS_FILE);
         appendFile(fout, "Cars", CARS_FILE);
         appendFile(fout, "Rentals", RENTALS_FILE);
         appendFile(fout, "Payments", PAYMENTS_FILE);
@@ -2013,7 +2038,8 @@ public:
     void displayBackupStatus() {
         printMenuTitle("Backup Source Status");
         cout << left << setw(18) << "File" << setw(10) << "Records" << endl;
-        cout << left << setw(18) << USERS_FILE << setw(10) << countFileRecords(USERS_FILE) << endl;
+        cout << left << setw(18) << STAFF_USERS_FILE << setw(10) << countFileRecords(STAFF_USERS_FILE) << endl;
+        cout << left << setw(18) << CUSTOMER_USERS_FILE << setw(10) << countFileRecords(CUSTOMER_USERS_FILE) << endl;
         cout << left << setw(18) << CARS_FILE << setw(10) << countFileRecords(CARS_FILE) << endl;
         cout << left << setw(18) << RENTALS_FILE << setw(10) << countFileRecords(RENTALS_FILE) << endl;
         cout << left << setw(18) << PAYMENTS_FILE << setw(10) << countFileRecords(PAYMENTS_FILE) << endl;
@@ -2040,7 +2066,8 @@ public:
     }
     void verifyRequiredFiles() {
         printMenuTitle("Required File Check");
-        printFileCheck(USERS_FILE);
+        printFileCheck(STAFF_USERS_FILE);
+        printFileCheck(CUSTOMER_USERS_FILE);
         printFileCheck(CARS_FILE);
         printFileCheck(RENTALS_FILE);
         printFileCheck(PAYMENTS_FILE);
@@ -2061,7 +2088,8 @@ public:
         cout << "[OK] Project_GR1.cpp contains the C++ source code." << endl;
         cout << "[OK] README.txt contains run and login instructions." << endl;
         cout << "[OK] cars.txt stores car records." << endl;
-        cout << "[OK] users.txt stores login accounts." << endl;
+        cout << "[OK] staff_users.txt stores staff/admin login accounts." << endl;
+        cout << "[OK] customer_users.txt stores customer login accounts." << endl;
         cout << "[OK] rentals.txt stores booking records." << endl;
         cout << "[OK] payments.txt stores payment records." << endl;
         cout << "[OK] system_report.txt stores admin system report." << endl;
@@ -2161,7 +2189,8 @@ public:
     }
     void showDataFileGuide() {
         printMenuTitle("Text File Guide");
-        showLine("users.txt stores staff and customer login accounts.");
+        showLine("staff_users.txt stores staff/admin login accounts.");
+        showLine("customer_users.txt stores customer login accounts.");
         showLine("cars.txt stores the linked-list car source records.");
         showLine("rentals.txt stores rental booking records.");
         showLine("payments.txt stores payment records created after booking.");
@@ -2245,8 +2274,19 @@ public:
     bool login(UserRecord users[], int userCount) {
         char username[MAX_TEXT];
         char password[MAX_TEXT];
+        cout << "Type 0 or CANCEL to return to main menu." << endl;
         inputLine("Staff username: ", username, MAX_TEXT);
+        if (isCancelInput(username)) {
+            copyText(currentUser, "cancelled", MAX_TEXT);
+            cout << "Staff login cancelled." << endl;
+            return false;
+        }
         inputPassword("Staff password: ", password, MAX_TEXT);
+        if (isCancelInput(password)) {
+            copyText(currentUser, "cancelled", MAX_TEXT);
+            cout << "Staff login cancelled." << endl;
+            return false;
+        }
         for (int i = 0; i < userCount; i++) {
             if (sameText(users[i].username, username) && sameText(users[i].password, password) && sameText(users[i].role, "Staff")) {
                 copyText(currentUser, username, MAX_TEXT);
@@ -2295,13 +2335,18 @@ public:
     void registerStaffAccount(UserManager &users) {
         try {
             UserRecord user;
+            cout << "Type 0 or CANCEL at any input to cancel staff registration." << endl;
             inputLine("New staff username: ", user.username, MAX_TEXT);
+            if (isCancelInput(user.username)) throw "Staff registration cancelled.";
             if (users.findUser(user.username) != NULL) throw "Username already exists.";
             inputPassword("New staff password: ", user.password, MAX_TEXT);
+            if (isCancelInput(user.password)) throw "Staff registration cancelled.";
             copyText(user.role, "Staff", MAX_TEXT);
             inputLine("Staff full name: ", user.fullName, MAX_TEXT);
+            if (isCancelInput(user.fullName)) throw "Staff registration cancelled.";
             while (true) {
                 inputLine("Phone (Malaysia format, example 0123456789): ", user.phone, MAX_TEXT);
+                if (isCancelInput(user.phone)) throw "Staff registration cancelled.";
                 if (isPhoneValid(user.phone)) break;
                 cout << "Invalid phone format. Use 10 or 11 digits and start with 01." << endl;
             }
@@ -2309,7 +2354,8 @@ public:
             users.save();
             cout << "Staff registration completed." << endl;
         } catch (const char *message) {
-            cout << "Error: " << message << endl;
+            if (containsText(message, "cancelled")) cout << message << endl;
+            else cout << "Error: " << message << endl;
         }
     }
     void addCarRecord(CarLinkedList &cars) {
@@ -2408,9 +2454,7 @@ public:
         cout << "Car selected for deletion:" << endl;
         printCarHeader();
         printCarRow(*car);
-        char confirm[MAX_TEXT];
-        inputLine("Confirm delete? Type YES to delete: ", confirm, MAX_TEXT);
-        if (sameText(confirm, "YES")) {
+        if (inputYesNoConfirmation("Confirm delete? Type YES to delete or NO to cancel: ")) {
             if (cars.removeById(id)) { cars.save(); cout << "Car deleted." << endl; }
             else cout << "Car not found." << endl;
         } else {
@@ -2426,8 +2470,19 @@ public:
     bool login(UserRecord users[], int userCount) {
         char username[MAX_TEXT];
         char password[MAX_TEXT];
+        cout << "Type 0 or CANCEL to return to main menu." << endl;
         inputLine("Customer username: ", username, MAX_TEXT);
+        if (isCancelInput(username)) {
+            copyText(currentUser, "cancelled", MAX_TEXT);
+            cout << "Customer login cancelled." << endl;
+            return false;
+        }
         inputPassword("Customer password: ", password, MAX_TEXT);
+        if (isCancelInput(password)) {
+            copyText(currentUser, "cancelled", MAX_TEXT);
+            cout << "Customer login cancelled." << endl;
+            return false;
+        }
         for (int i = 0; i < userCount; i++) {
             if (sameText(users[i].username, username) && sameText(users[i].password, password) && sameText(users[i].role, "Customer")) {
                 copyText(currentUser, username, MAX_TEXT);
@@ -2459,13 +2514,18 @@ public:
     void registerAccount(UserManager &users) {
         try {
             UserRecord user;
+            cout << "Type 0 or CANCEL at any input to cancel registration." << endl;
             inputLine("New username: ", user.username, MAX_TEXT);
+            if (isCancelInput(user.username)) throw "Registration cancelled.";
             if (users.findUser(user.username) != NULL) throw "Username already exists.";
             inputPassword("New password: ", user.password, MAX_TEXT);
+            if (isCancelInput(user.password)) throw "Registration cancelled.";
             copyText(user.role, "Customer", MAX_TEXT);
             inputLine("Full name: ", user.fullName, MAX_TEXT);
+            if (isCancelInput(user.fullName)) throw "Registration cancelled.";
             while (true) {
                 inputLine("Phone (Malaysia format, example 0123456789): ", user.phone, MAX_TEXT);
+                if (isCancelInput(user.phone)) throw "Registration cancelled.";
                 if (isPhoneValid(user.phone)) break;
                 cout << "Invalid phone format. Use 10 or 11 digits and start with 01." << endl;
             }
@@ -2473,7 +2533,8 @@ public:
             users.save();
             cout << "Registration completed." << endl;
         } catch (const char *message) {
-            cout << "Error: " << message << endl;
+            if (containsText(message, "cancelled")) cout << message << endl;
+            else cout << "Error: " << message << endl;
         }
     }
     void displayAvailableCars(CarLinkedList &cars) {
@@ -2542,7 +2603,8 @@ public:
             cout << "Payment details:" << endl;
             payments.displayPaymentByRental(rental.rentalId);
         } catch (const char *message) {
-            cout << "Error: " << message << endl;
+            if (containsText(message, "cancelled")) cout << message << endl;
+            else cout << "Error: " << message << endl;
         }
     }
     void editBooking(RentalManager &rentals, CarLinkedList &cars, PaymentManager &payments, ReceiptManager &receipts, ActivityLogManager &activityLog) {
@@ -2566,7 +2628,8 @@ public:
             printRentalHeader();
             printRentalRow(*rental);
         } catch (const char *message) {
-            cout << "Error: " << message << endl;
+            if (containsText(message, "cancelled")) cout << message << endl;
+            else cout << "Error: " << message << endl;
         }
     }
     void cancelBooking(RentalManager &rentals, CarLinkedList &cars, PaymentManager &payments, ActivityLogManager &activityLog) {
@@ -2726,11 +2789,11 @@ int main() {
         if (option == 1) {
             StaffModule staff;
             if (staff.login(users.allUsers(), users.size())) runStaff(staff, users, cars, rentals, payments, receipts, feedbacks, maintenance, promotions, incidents, activityLog, analytics, backup, helpGuide, reports);
-            else cout << "Invalid staff login." << endl;
+            else if (!sameText(staff.getCurrentUser(), "cancelled")) cout << "Invalid staff login." << endl;
         } else if (option == 2) {
             CustomerModule customer;
             if (customer.login(users.allUsers(), users.size())) runCustomer(customer, users, cars, rentals, payments, receipts, feedbacks, promotions, incidents, activityLog, helpGuide);
-            else cout << "Invalid customer login." << endl;
+            else if (!sameText(customer.getCurrentUser(), "cancelled")) cout << "Invalid customer login." << endl;
         } else if (option == 3) {
             CustomerModule customer;
             customer.registerAccount(users);

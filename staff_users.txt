@@ -1,3 +1,2 @@
 admin,admin123,Staff,Main Administrator,0100000000
 staff,staff123,Staff,Car Rental Staff,0101111111
-customer,cust123,Customer,Sample Customer,0112222222
