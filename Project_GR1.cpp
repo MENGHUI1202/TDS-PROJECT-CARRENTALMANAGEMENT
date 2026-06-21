@@ -273,11 +273,13 @@ bool isPlateValid(const char plate[]) {
     if (digits < 1 || digits > 4) return false;
     return true;
 }
-void inputPlateNumber(const char prompt[], char plate[]) {
+bool isCancelInput(const char text[]);
+bool inputPlateNumber(const char prompt[], char plate[]) {
     while (true) {
         inputLine(prompt, plate, MAX_TEXT);
         toUpperText(plate);
-        if (isPlateValid(plate)) return;
+        if (isCancelInput(plate)) return false;
+        if (isPlateValid(plate)) return true;
         cout << "Invalid plate format. Use 1-3 English letters followed by 1-4 digits, example ABC1234." << endl;
     }
 }
@@ -499,31 +501,35 @@ void inputPositiveInt(const char prompt[], int &value) {
         cout << "Invalid number. Please enter a positive value." << endl;
     }
 }
-void chooseCarType(char out[]) {
+bool chooseCarType(char out[]) {
     printMenuTitle("Select Car Type");
     printMenuOption(1, "Sedan");
     printMenuOption(2, "Hatchback");
     printMenuOption(3, "SUV");
     printMenuOption(4, "Compact");
     printMenuOption(5, "Manual input");
+    printMenuOption(6, "Cancel");
     printBoxLine(48);
-    int choice = readChoice(1, 5);
+    int choice = readChoice(1, 6);
     if (choice == 1) copyText(out, "Sedan", MAX_TEXT);
     else if (choice == 2) copyText(out, "Hatchback", MAX_TEXT);
     else if (choice == 3) copyText(out, "SUV", MAX_TEXT);
     else if (choice == 4) copyText(out, "Compact", MAX_TEXT);
+    else if (choice == 6) return false;
     else {
         while (true) {
             inputLine("Type (letters and spaces only, 3-20 characters): ", out, MAX_TEXT);
+            if (isCancelInput(out)) return false;
             int len = strlen(out);
             bool valid = len >= 3 && len <= 20;
             for (int i = 0; out[i] != '\0'; i++) {
                 if (!isalpha(out[i]) && out[i] != ' ') valid = false;
             }
-            if (valid) return;
+            if (valid) return true;
             cout << "Invalid type. Use letters and spaces only, example Luxury Van." << endl;
         }
     }
+    return true;
 }
 class FileEntity {
 protected:
@@ -2363,15 +2369,21 @@ public:
             CarRecord car;
             char rateText[MAX_TEXT];
             char seatText[MAX_TEXT];
+            cout << "Type 0 or CANCEL at any input to cancel add car." << endl;
             showLatestCarId(cars);
             inputLine("Car ID: ", car.carId, MAX_TEXT);
+            if (isCancelInput(car.carId)) throw "Add car cancelled.";
             if (cars.findById(car.carId) != NULL) throw "Car ID already exists.";
             inputLine("Brand: ", car.brand, MAX_TEXT);
+            if (isCancelInput(car.brand)) throw "Add car cancelled.";
             inputLine("Model: ", car.model, MAX_TEXT);
-            inputPlateNumber("Plate No (letters then digits, example ABC1234): ", car.plateNo);
-            chooseCarType(car.carType);
+            if (isCancelInput(car.model)) throw "Add car cancelled.";
+            if (!inputPlateNumber("Plate No (letters then digits, example ABC1234): ", car.plateNo)) throw "Add car cancelled.";
+            if (!chooseCarType(car.carType)) throw "Add car cancelled.";
             inputLine("Daily Rate: ", rateText, MAX_TEXT);
+            if (isCancelInput(rateText)) throw "Add car cancelled.";
             inputLine("Seats: ", seatText, MAX_TEXT);
+            if (isCancelInput(seatText)) throw "Add car cancelled.";
             copyText(car.status, "Available", MAX_TEXT);
             car.dailyRate = textToDouble(rateText);
             car.seats = textToInt(seatText);
@@ -2381,7 +2393,8 @@ public:
             cars.save();
             cout << "Car added successfully." << endl;
         } catch (const char *message) {
-            cout << "Error: " << message << endl;
+            if (containsText(message, "cancelled")) cout << message << endl;
+            else cout << "Error: " << message << endl;
         }
     }
     void editCarRecord(CarLinkedList &cars) {
@@ -2407,8 +2420,18 @@ public:
             int field = readChoice(1, 8);
             if (field == 1) inputLine("New brand: ", car->brand, MAX_TEXT);
             else if (field == 2) inputLine("New model: ", car->model, MAX_TEXT);
-            else if (field == 3) inputPlateNumber("New plate number: ", car->plateNo);
-            else if (field == 4) chooseCarType(car->carType);
+            else if (field == 3) {
+                if (!inputPlateNumber("New plate number: ", car->plateNo)) {
+                    cout << "Edit cancelled." << endl;
+                    return;
+                }
+            }
+            else if (field == 4) {
+                if (!chooseCarType(car->carType)) {
+                    cout << "Edit cancelled." << endl;
+                    return;
+                }
+            }
             else if (field == 5) {
                 inputLine("New daily rate: ", rateText, MAX_TEXT);
                 car->dailyRate = textToDouble(rateText);
