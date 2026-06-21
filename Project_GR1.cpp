@@ -2229,24 +2229,40 @@ public:
         showLine("Maintenance changes car status to Maintenance, then back to Available.");
         showLine("Analytics uses manual loops over arrays and linked list records.");
     }
-    void showHelpMenu() {
+    void showStaffHelpMenu() {
         int choice = 0;
-        while (choice != 6) {
-            printMenuTitle("Help And User Guide");
+        while (choice != 5) {
+            printMenuTitle("Staff Help And User Guide");
             printMenuOption(1, "Staff guide");
-            printMenuOption(2, "Customer guide");
-            printMenuOption(3, "Input validation guide");
-            printMenuOption(4, "Text file guide");
-            printMenuOption(5, "Algorithm guide");
-            printMenuOption(6, "Back");
+            printMenuOption(2, "Input validation guide");
+            printMenuOption(3, "Text file guide");
+            printMenuOption(4, "Algorithm guide");
+            printMenuOption(5, "Back");
             printBoxLine(48);
-            choice = readChoice(1, 6);
+            choice = readChoice(1, 5);
             if (choice == 1) showStaffGuide();
-            else if (choice == 2) showCustomerGuide();
-            else if (choice == 3) showValidationGuide();
-            else if (choice == 4) showDataFileGuide();
-            else if (choice == 5) showAlgorithmGuide();
-            if (choice != 6) waitForEnter();
+            else if (choice == 2) showValidationGuide();
+            else if (choice == 3) showDataFileGuide();
+            else if (choice == 4) showAlgorithmGuide();
+            if (choice != 5) waitForEnter();
+        }
+    }
+    void showCustomerHelpMenu() {
+        int choice = 0;
+        while (choice != 5) {
+            printMenuTitle("Customer Help And User Guide");
+            printMenuOption(1, "Customer guide");
+            printMenuOption(2, "Input validation guide");
+            printMenuOption(3, "Text file guide");
+            printMenuOption(4, "Algorithm guide");
+            printMenuOption(5, "Back");
+            printBoxLine(48);
+            choice = readChoice(1, 5);
+            if (choice == 1) showCustomerGuide();
+            else if (choice == 2) showValidationGuide();
+            else if (choice == 3) showDataFileGuide();
+            else if (choice == 4) showAlgorithmGuide();
+            if (choice != 5) waitForEnter();
         }
     }
 };
@@ -2804,7 +2820,7 @@ void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, Renta
         else if (choice == 30) users.searchCustomerByUsername();
         else if (choice == 31) users.filterCustomersByPhonePrefix();
         else if (choice == 32) users.displayUserStatistics();
-        else if (choice == 33) helpGuide.showHelpMenu();
+        else if (choice == 33) helpGuide.showStaffHelpMenu();
         if (choice != 34) waitForEnter();
     }
     staff.logout();
@@ -2828,7 +2844,7 @@ void runCustomer(CustomerModule &customer, UserManager &users, CarLinkedList &ca
         else if (choice == 12) promotions.displayActive();
         else if (choice == 13) { incidents.addIncident(customer.getCurrentUser(), rentals); activityLog.addActivity(customer.getCurrentUser(), "Report incident", "INC", "Success"); }
         else if (choice == 14) incidents.displayCustomerIncidents(customer.getCurrentUser());
-        else if (choice == 15) helpGuide.showHelpMenu();
+        else if (choice == 15) helpGuide.showCustomerHelpMenu();
         if (choice != 16) waitForEnter();
     }
     customer.logout();
