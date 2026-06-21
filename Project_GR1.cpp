@@ -2696,8 +2696,23 @@ public:
     void cancelBooking(RentalManager &rentals, CarLinkedList &cars, PaymentManager &payments, ActivityLogManager &activityLog) {
         char id[MAX_TEXT];
         inputLine("Rental ID to cancel: ", id, MAX_TEXT);
+        if (isCancelInput(id)) {
+            cout << "Cancel booking cancelled." << endl;
+            return;
+        }
         RentalRecord *rental = rentals.findById(id);
         if (rental != NULL && sameText(rental->username, currentUser)) {
+            if (sameText(rental->status, "Cancelled")) {
+                cout << "Booking is already cancelled." << endl;
+                return;
+            }
+            cout << "Rental selected for cancellation:" << endl;
+            printRentalHeader();
+            printRentalRow(*rental);
+            if (!inputYesNoConfirmation("Confirm cancel booking? Type YES to cancel or NO to keep booking: ")) {
+                cout << "Cancel booking cancelled." << endl;
+                return;
+            }
             copyText(rental->status, "Cancelled", MAX_TEXT);
             CarRecord *car = cars.findById(rental->carId);
             if (car != NULL) {
@@ -2722,11 +2737,16 @@ public:
         fout << "Customer Summary for " << currentUser << endl;
         int count = 0;
         double amount = 0;
+        fout << left << setw(8) << "ID" << setw(8) << "Car" << setw(12) << "Start";
+        fout << setw(12) << "End" << setw(6) << "Days" << setw(10) << "Amount" << setw(12) << "Status" << endl;
         for (int i = 0; i < rentals.size(); i++) {
             RentalRecord rental = rentals.getAt(i);
             if (sameText(rental.username, currentUser)) {
                 count++;
                 amount += rental.totalAmount;
+                fout << left << setw(8) << rental.rentalId << setw(8) << rental.carId;
+                fout << setw(12) << rental.startDate << setw(12) << rental.endDate << setw(6) << rental.days;
+                fout << setw(10) << rental.totalAmount << setw(12) << rental.status << endl;
             }
         }
         fout << "Rental count: " << count << endl;
