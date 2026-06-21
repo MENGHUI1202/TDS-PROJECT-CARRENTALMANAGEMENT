@@ -392,7 +392,7 @@ bool isDateRangeValid(const char startDate[], const char endDate[]) {
     int startKey = dateKey(startDate);
     int endKey = dateKey(endDate);
     if (startKey < 0 || endKey < 0) return false;
-    return endKey >= startKey;
+    return endKey > startKey;
 }
 bool isCancelInput(const char text[]) {
     return sameText(text, "0") || sameText(text, "CANCEL");
@@ -422,7 +422,7 @@ void inputDateRange(char startDate[], char endDate[]) {
         inputDate("Start date YYYY-MM-DD: ", startDate);
         inputDate("End date YYYY-MM-DD: ", endDate);
         if (isDateRangeValid(startDate, endDate)) return;
-        cout << "Invalid date range. End date must not be earlier than start date." << endl;
+        cout << "Invalid date range. End date must be after start date." << endl;
     }
 }
 int calculateRentalDays(const char startDate[], const char endDate[]) {
@@ -448,7 +448,7 @@ bool inputBookingDateRange(char startDate[], char endDate[], int &days) {
         }
         inputDate("End date YYYY-MM-DD: ", endDate);
         if (!isDateRangeValid(startDate, endDate)) {
-            cout << "Invalid end date. End date cannot be before start date." << endl;
+            cout << "Invalid end date. End date must be after start date." << endl;
             continue;
         }
         days = calculateRentalDays(startDate, endDate);
@@ -2187,7 +2187,7 @@ public:
         showLine("Phone number must start with 01 and contain 10 or 11 digits.");
         showLine("Plate number must contain 1-3 English letters followed by 1-4 digits.");
         showLine("Date must follow YYYY-MM-DD format.");
-        showLine("End date must not be earlier than start date.");
+        showLine("End date must be after start date.");
         showLine("Rental days, seats, cost, and amount must be positive where required.");
         showLine("Promotion discount cannot exceed the allowed maximum.");
         showLine("Duplicate username and duplicate car ID are rejected.");
@@ -2310,32 +2310,33 @@ public:
         printMenuOption(5, "Sort cars");
         printMenuOption(6, "Delete car");
         printMenuOption(7, "Display rental records");
-        printMenuOption(8, "Save and view system report");
-        printMenuOption(9, "Register staff account");
-        printMenuOption(10, "Display customers");
-        printMenuOption(11, "Display staff accounts");
-        printMenuOption(12, "Display payment records");
-        printMenuOption(13, "Add maintenance record");
-        printMenuOption(14, "Complete maintenance");
-        printMenuOption(15, "Display maintenance records");
-        printMenuOption(16, "Display customer feedback");
-        printMenuOption(17, "Update feedback status");
-        printMenuOption(18, "Display receipts");
-        printMenuOption(19, "Display activity log");
-        printMenuOption(20, "Search activity by user");
-        printMenuOption(21, "Add promotion");
-        printMenuOption(22, "Edit promotion");
-        printMenuOption(23, "Display promotions");
-        printMenuOption(24, "Display incidents");
-        printMenuOption(25, "Update incident");
-        printMenuOption(26, "Search incidents by car");
-        printMenuOption(27, "Fleet analytics");
-        printMenuOption(28, "Backup and export");
-        printMenuOption(29, "Search customer account");
-        printMenuOption(30, "Filter customers by phone");
-        printMenuOption(31, "Display user statistics");
-        printMenuOption(32, "Help and user guide");
-        printMenuOption(33, "Logout");
+        printMenuOption(8, "Complete rental");
+        printMenuOption(9, "Save and view system report");
+        printMenuOption(10, "Register staff account");
+        printMenuOption(11, "Display customers");
+        printMenuOption(12, "Display staff accounts");
+        printMenuOption(13, "Display payment records");
+        printMenuOption(14, "Add maintenance record");
+        printMenuOption(15, "Complete maintenance");
+        printMenuOption(16, "Display maintenance records");
+        printMenuOption(17, "Display customer feedback");
+        printMenuOption(18, "Update feedback status");
+        printMenuOption(19, "Display receipts");
+        printMenuOption(20, "Display activity log");
+        printMenuOption(21, "Search activity by user");
+        printMenuOption(22, "Add promotion");
+        printMenuOption(23, "Edit promotion");
+        printMenuOption(24, "Display promotions");
+        printMenuOption(25, "Display incidents");
+        printMenuOption(26, "Update incident");
+        printMenuOption(27, "Search incidents by car");
+        printMenuOption(28, "Fleet analytics");
+        printMenuOption(29, "Backup and export");
+        printMenuOption(30, "Search customer account");
+        printMenuOption(31, "Filter customers by phone");
+        printMenuOption(32, "Display user statistics");
+        printMenuOption(33, "Help and user guide");
+        printMenuOption(34, "Logout");
         printBoxLine(48);
     }
     void registerStaffAccount(UserManager &users) {
@@ -2483,6 +2484,43 @@ public:
         } else {
             cout << "Delete cancelled." << endl;
         }
+    }
+    bool completeRentalRecord(RentalManager &rentals, CarLinkedList &cars) {
+        char id[MAX_TEXT];
+        inputLine("Rental ID to complete: ", id, MAX_TEXT);
+        if (isCancelInput(id)) {
+            cout << "Complete rental cancelled." << endl;
+            return false;
+        }
+        RentalRecord *rental = rentals.findById(id);
+        if (rental == NULL) {
+            cout << "Rental not found." << endl;
+            return false;
+        }
+        if (sameText(rental->status, "Completed")) {
+            cout << "Rental is already completed." << endl;
+            return false;
+        }
+        if (sameText(rental->status, "Cancelled")) {
+            cout << "Cancelled rental cannot be completed." << endl;
+            return false;
+        }
+        cout << "Rental selected for completion:" << endl;
+        printRentalHeader();
+        printRentalRow(*rental);
+        if (!inputYesNoConfirmation("Confirm complete rental? Type YES to complete or NO to cancel: ")) {
+            cout << "Complete rental cancelled." << endl;
+            return false;
+        }
+        copyText(rental->status, "Completed", MAX_TEXT);
+        CarRecord *car = cars.findById(rental->carId);
+        if (car != NULL && sameText(car->status, "Rented")) {
+            copyText(car->status, "Available", MAX_TEXT);
+            cars.save();
+        }
+        rentals.save();
+        cout << "Rental completed." << endl;
+        return true;
     }
 };
 class CustomerModule : public PersonModule {
@@ -2704,9 +2742,9 @@ public:
 };
 void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, RentalManager &rentals, PaymentManager &payments, ReceiptManager &receipts, FeedbackManager &feedbacks, MaintenanceManager &maintenance, PromotionManager &promotions, IncidentManager &incidents, ActivityLogManager &activityLog, FleetAnalytics &analytics, BackupManager &backup, HelpGuide &helpGuide, ReportModule &reports) {
     int choice = 0;
-    while (choice != 33) {
+    while (choice != 34) {
         staff.showMenu();
-        choice = readChoice(1, 33);
+        choice = readChoice(1, 34);
         if (choice == 1) staff.addCarRecord(cars);
         else if (choice == 2) staff.editCarRecord(cars);
         else if (choice == 3) printCarFriend(cars);
@@ -2714,32 +2752,35 @@ void runStaff(StaffModule &staff, UserManager &users, CarLinkedList &cars, Renta
         else if (choice == 5) staff.sortCarRecords(cars);
         else if (choice == 6) staff.deleteCarRecord(cars);
         else if (choice == 7) printRentalFriend(rentals);
-        else if (choice == 8) reports.saveSummary(cars, rentals);
-        else if (choice == 9) staff.registerStaffAccount(users);
-        else if (choice == 10) users.displayAllUsers();
-        else if (choice == 11) users.displayStaffUsers();
-        else if (choice == 12) payments.displayAllPayments();
-        else if (choice == 13) { maintenance.addMaintenance(cars); activityLog.addActivity(staff.getCurrentUser(), "Add maintenance", "CAR", "Success"); }
-        else if (choice == 14) { maintenance.completeMaintenance(cars); activityLog.addActivity(staff.getCurrentUser(), "Complete maintenance", "MNT", "Success"); }
-        else if (choice == 15) maintenance.displayAll();
-        else if (choice == 16) feedbacks.displayAllFeedback();
-        else if (choice == 17) feedbacks.updateFeedbackStatus();
-        else if (choice == 18) receipts.displayAllReceipts();
-        else if (choice == 19) activityLog.displayAll();
-        else if (choice == 20) activityLog.searchByUser();
-        else if (choice == 21) promotions.addPromotion();
-        else if (choice == 22) promotions.editPromotion();
-        else if (choice == 23) promotions.displayAll();
-        else if (choice == 24) incidents.displayAll();
-        else if (choice == 25) incidents.updateIncident();
-        else if (choice == 26) incidents.searchByCar();
-        else if (choice == 27) analytics.showAnalyticsMenu(cars, rentals, maintenance, feedbacks, incidents);
-        else if (choice == 28) backup.displayBackupMenu();
-        else if (choice == 29) users.searchCustomerByUsername();
-        else if (choice == 30) users.filterCustomersByPhonePrefix();
-        else if (choice == 31) users.displayUserStatistics();
-        else if (choice == 32) helpGuide.showHelpMenu();
-        if (choice != 33) waitForEnter();
+        else if (choice == 8) {
+            if (staff.completeRentalRecord(rentals, cars)) activityLog.addActivity(staff.getCurrentUser(), "Complete rental", "REN", "Success");
+        }
+        else if (choice == 9) reports.saveSummary(cars, rentals);
+        else if (choice == 10) staff.registerStaffAccount(users);
+        else if (choice == 11) users.displayAllUsers();
+        else if (choice == 12) users.displayStaffUsers();
+        else if (choice == 13) payments.displayAllPayments();
+        else if (choice == 14) { maintenance.addMaintenance(cars); activityLog.addActivity(staff.getCurrentUser(), "Add maintenance", "CAR", "Success"); }
+        else if (choice == 15) { maintenance.completeMaintenance(cars); activityLog.addActivity(staff.getCurrentUser(), "Complete maintenance", "MNT", "Success"); }
+        else if (choice == 16) maintenance.displayAll();
+        else if (choice == 17) feedbacks.displayAllFeedback();
+        else if (choice == 18) feedbacks.updateFeedbackStatus();
+        else if (choice == 19) receipts.displayAllReceipts();
+        else if (choice == 20) activityLog.displayAll();
+        else if (choice == 21) activityLog.searchByUser();
+        else if (choice == 22) promotions.addPromotion();
+        else if (choice == 23) promotions.editPromotion();
+        else if (choice == 24) promotions.displayAll();
+        else if (choice == 25) incidents.displayAll();
+        else if (choice == 26) incidents.updateIncident();
+        else if (choice == 27) incidents.searchByCar();
+        else if (choice == 28) analytics.showAnalyticsMenu(cars, rentals, maintenance, feedbacks, incidents);
+        else if (choice == 29) backup.displayBackupMenu();
+        else if (choice == 30) users.searchCustomerByUsername();
+        else if (choice == 31) users.filterCustomersByPhonePrefix();
+        else if (choice == 32) users.displayUserStatistics();
+        else if (choice == 33) helpGuide.showHelpMenu();
+        if (choice != 34) waitForEnter();
     }
     staff.logout();
 }
